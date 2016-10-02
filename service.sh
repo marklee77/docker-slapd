@@ -1,9 +1,8 @@
 #!/bin/bash
 
 : ${slapd_domain:=localdomain}
-: ${slapd_admin_password:=} # FIXME: generate
-: ${slapd_admin_password_salt:=} # FIXME: generate
-: ${slapd_services:=ldap:/// ldapi:///}
+: ${slapd_admin_password:=password}
+: ${slapd_services:=ldapi:/// ldap:///}
 : ${slapd_base_dn:=dc=localdomain}
 : ${slapd_enable_ssl:=yes}
 : ${slapd_require_ssl:=yes}
@@ -11,10 +10,9 @@
 : ${slapd_ssl_cipher_suite:=SECURE256:!AES-128-CBC:!ARCFOUR-128:!CAMELLIA-128-CBC:!3DES-CBC:!CAMELLIA-128-CBC}
 : ${slapd_ssl_cert_file:=/etc/ssl/certs/ssl-cert-snakeoil.pem}
 : ${slapd_ssl_key_file:=/etc/ssl/private/ssl-cert-snakeoil.key}
-: ${slapd_ssl_ca_cert_fil:=/etc/ssl/certs/ca-certificates.crt}
+: ${slapd_ssl_ca_cert_file:=/etc/ssl/certs/ca-certificates.crt}
 
-echo "slapd slapd/domain string $slapd_domain" | debconf-set-selections
-dpkg-reconfigure -f noninteractive slapd
+umask 0022
 
 if [ "$slapd_enable_ssl" = "yes" ] && [ -n "$slapd_ssl_cert_file "] && \
     ! [ -f "$slapd_ssl_cert_file" ]; then
@@ -24,16 +22,21 @@ if [ "$slapd_enable_ssl" = "yes" ] && [ -n "$slapd_ssl_cert_file "] && \
     update-ca-certificates
 fi
 
-exec /usr/sbin/slapd -h "${slapd_services}" -g openldap -u openldap -F /etc/ldap/slapd.d
+debconf-set-selections <<EOF
+slapd slapd/domain string $slapd_domain
+slapd slapd/password1 password $slapd_admin_password
+slapd slapd/password2 password $slapd_admin_password
+EOF
 
-# FIXME: use my_init.d for below:
-# - set root password
-# - configure ssl or not
-# - require ssl if needed
-# - allow bind
-# - enable membership overlay and configure
-# - enable refint overlay and configure
-# - enable unique overlay and configure
-# - setup indexes
-# - ldapscripts
+echo "$slapd_admin_password" > /etc/ldapscripts/ldapscripts.passwd
+chmod 0640 /etc/ldapscripts/ldapscripts.passwd
 
+dpkg-reconfigure -f noninteractive slapd
+
+cat > /etc/ldap/slapd.conf <<EOF
+TLSCACertificateFile $slapd_ssl_ca_cert_file
+TLSCertificateKeyFile $slapd_ssl_cert_file
+TLSCertificateFile $slapd_ssl_key_file
+EOF
+
+exec /usr/sbin/slapd -d0 -h "${slapd_services}" -g openldap -u openldap -f /etc/ldap/slapd.conf -F /etc/ldap/slapd.d

@@ -9,10 +9,10 @@ RUN apt-get update && \
         ldap-utils \
         ldapscripts \
         slapd \
-        ssl-cert \
+        ssl-cert && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
-RUN useradd -G ssl-cert -d /var/lib/ldap -s /bin/false openldapd
+RUN usermod -a -G ssl-cert openldap
 
 COPY service.sh /etc/service/slapd/run
 
@@ -20,4 +20,4 @@ COPY service.sh /etc/service/slapd/run
 VOLUME [ "/var/lib/ldap", "/var/log" ]
 
 # interface ports
-EXPOSE 683
+EXPOSE 389
