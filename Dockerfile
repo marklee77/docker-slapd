@@ -14,7 +14,7 @@ RUN apt-get update && \
 
 RUN usermod -a -G ssl-cert openldap
 
-COPY service.sh /etc/service/slapd/run
+COPY slapd.sh /etc/service/slapd/run
 
 # data volumes
 VOLUME [ "/var/lib/ldap", "/var/log" ]
