@@ -5,7 +5,6 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update && \
     apt-get -y install \
         ca-certificates \
-        debconf \
         ldap-utils \
         ldapscripts \
         slapd \
@@ -13,11 +12,10 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
 RUN usermod -a -G ssl-cert openldap
+RUN rm -rf /etc/ldap/slapd.d/* /var/lib/ldap/*
 
 COPY slapd.sh /etc/service/slapd/run
 
-# data volumes
-VOLUME [ "/var/lib/ldap", "/var/log" ]
+VOLUME [ "/etc/ldap", "/var/lib/ldap", "/var/run/ldap", "/var/log" ]
 
-# interface ports
-EXPOSE 389
+EXPOSE 389 636

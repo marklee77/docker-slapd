@@ -17,14 +17,7 @@
 
 umask 0022
 
-debconf-set-selections <<EOF
-slapd slapd/domain string $slapd_domain
-slapd slapd/password1 password $slapd_admin_password
-slapd slapd/password2 password $slapd_admin_password
-EOF
-dpkg-reconfigure -f noninteractive slapd
-
-if [ "$slapd_enable_ssl" = "yes" ] && [ -n "$slapd_ssl_cert_file "] && \
+if [ "$slapd_enable_ssl" = "yes" ] && [ -n "$slapd_ssl_cert_file" ] && \
     ! [ -f "$slapd_ssl_cert_file" ]; then
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
         -subj "/CN=$slapd_ssl_hostname" \
@@ -32,29 +25,21 @@ if [ "$slapd_enable_ssl" = "yes" ] && [ -n "$slapd_ssl_cert_file "] && \
     update-ca-certificates
 fi
 
-/usr/sbin/slapd -h ldapi:/// -g openldap -u openldap -F /etc/ldap/slapd.d
-while true; do
-ldapmodify -Y EXTERNAL -H ldapi:/// <<EOF
-dn: cn=config
-changetype: modify
-replace: olcTLSCACertificateFile
-olcTLSCACertificateFile: $slapd_ssl_ca_cert_file
--
-replace: olcTLSCipherSuite
-olcTLSCipherSuite: $slapd_ssl_cipher_suite
--
-replace: olcTLSCertificatefile
-olcTLSCertificatefile: $slapd_ssl_cert_file
--
-replace: olcTLSCertificateKeyFile
-olcTLSCertificateKeyFile: $slapd_ssl_key_file
-EOF
-[ $? == 0 ] && break
-sleep 5
-done
-while pkill slapd; do sleep 1; done
+if [ ! -f "/etc/ldap/slapd.d/cn=config.ldif" ]; then
+  slapd_admin_password_hash=$(slappasswd -s "$slapd_admin_password")
+  cat /usr/share/slapd/slapd.init.ldif | \
+      sed "s|@BACKEND@|mdb|g" | \
+      sed "s|@BACKENDOBJECTCLASS@|olcMdbConfig|g" | \
+      sed "s|@BACKENDOPTIONS@|olcDbMaxSize: 1073741824|g" | \
+      sed "s|@SUFFIX@|$slapd_base_dn|g" | \
+      sed "s|@PASSWORD@|$slapd_admin_password_hash|g" | \
+      slapadd -b cn=config -F /etc/ldap/slapd.d
+  chown -R openldap:openldap /etc/ldap/slapd.d
+fi
 
-echo "$slapd_admin_password" > /etc/ldapscripts/ldapscripts.passwd
-chmod 0640 /etc/ldapscripts/ldapscripts.passwd
+if [ ! -f /etc/ldapscripts/ldapscripts.passwd ]; then
+  echo "$slapd_admin_password" > /etc/ldapscripts/ldapscripts.passwd
+  chmod 0640 /etc/ldapscripts/ldapscripts.passwd
+fi
 
 exec /usr/sbin/slapd -d $slapd_debuglevel -h "${slapd_services}" -g openldap -u openldap -F /etc/ldap/slapd.d
