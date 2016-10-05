@@ -7,8 +7,8 @@
 : ${slapd_enable_ssl:=yes}
 : ${slapd_require_ssl:=yes}
 : ${slapd_ssl_hostname:=localhost}
-: ${slapd_ssl_ca_cert_file:=/etc/ssl/certs/ca-certificates.crt}
 : ${slapd_ssl_cipher_suite:=SECURE256:!AES-128-CBC:!ARCFOUR-128:!CAMELLIA-128-CBC:!3DES-CBC:!CAMELLIA-128-CBC}
+: ${slapd_ssl_ca_cert_file:=/etc/ssl/certs/ca-certificates.crt}
 : ${slapd_ssl_cert_file:=/etc/ssl/certs/ssl-cert-snakeoil.pem}
 : ${slapd_ssl_key_file:=/etc/ssl/private/ssl-cert-snakeoil.key}
 
@@ -26,6 +26,7 @@ if [ "$slapd_enable_ssl" = "yes" ] && [ -n "$slapd_ssl_cert_file" ] && \
 fi
 
 if [ ! -f "/etc/ldap/slapd.d/cn=config.ldif" ]; then
+
   slapd_admin_password_hash=$(slappasswd -s "$slapd_admin_password")
   cat /usr/share/slapd/slapd.init.ldif | \
       sed "s|@BACKEND@|mdb|g" | \
@@ -35,6 +36,34 @@ if [ ! -f "/etc/ldap/slapd.d/cn=config.ldif" ]; then
       sed "s|@PASSWORD@|$slapd_admin_password_hash|g" | \
       slapadd -b cn=config -F /etc/ldap/slapd.d
   chown -R openldap:openldap /etc/ldap/slapd.d
+
+  # start slapd on local socket and wait for it to come up
+  /usr/sbin/slapd -h ldapi:/// -g openldap -u openldap -F /etc/ldap/slapd.d
+  while ! ldapsearch -H ldapi:/// -Y EXTERNAL -b cn=config >/dev/null 2>&1; do
+      sleep 1
+  done
+
+  if [ "$slapd_enable_ssl" = yes ]; then
+      ldapmodify -H ldapi:/// -Y EXTERNAL <<EOF
+dn: cn=config
+changetype: modify
+replace: olcTLSCipherSuite
+olcTLSCipherSuite: $slapd_ssl_cipher_suite
+-
+replace: olcTLSCACertificateFile
+olcTLSCACertificateFile: $slapd_ssl_ca_cert_file
+-
+replace: olcTLSCertificateFile
+olcTLSCertificateFile: $slapd_ssl_cert_file
+-
+replace: olcTLSCertificateKeyFile
+olcTLSCertificateKeyFile: $slapd_ssl_key_file
+EOF
+  fi
+
+  # make sure that slapd is not running
+  while pkill -INT slapd; do sleep 1; done
+
 fi
 
 if [ ! -f /etc/ldapscripts/ldapscripts.passwd ]; then
