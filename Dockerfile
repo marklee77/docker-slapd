@@ -13,6 +13,7 @@ RUN apt-get update && \
 
 RUN usermod -a -G ssl-cert openldap
 RUN rm -rf /etc/ldap/slapd.d/* /var/lib/ldap/*
+RUN rm -f /etc/ldapscripts/ldapscripts.passwd
 
 COPY slapd.sh /etc/service/slapd/run
 

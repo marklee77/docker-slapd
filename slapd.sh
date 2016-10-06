@@ -2,15 +2,17 @@
 
 : ${slapd_domain:=localdomain}
 : ${slapd_base_dn:=dc=$(echo $slapd_domain | sed 's/^\.//; s/\./,dc=/g')}
-: ${slapd_admin_password:=password}
+: ${slapd_admin_password:=$(pwgen -s1 32)}
 
 : ${slapd_enable_ssl:=yes}
-: ${slapd_require_ssl:=yes}
-: ${slapd_ssl_hostname:=localhost}
-: ${slapd_ssl_cipher_suite:=SECURE256:!AES-128-CBC:!ARCFOUR-128:!CAMELLIA-128-CBC:!3DES-CBC:!CAMELLIA-128-CBC}
+: ${slapd_ssl_hostname:=$(hostname)}
 : ${slapd_ssl_ca_cert_file:=/etc/ssl/certs/ca-certificates.crt}
-: ${slapd_ssl_cert_file:=/etc/ssl/certs/ssl-cert-snakeoil.pem}
-: ${slapd_ssl_key_file:=/etc/ssl/private/ssl-cert-snakeoil.key}
+: ${slapd_ssl_cert_file:=/usr/local/share/ca-certificates/slapd.crt}
+: ${slapd_ssl_key_file:=/etc/ssl/private/slapd.key}
+
+: ${slapd_require_ssl:=yes}
+
+: ${slapd_disable_anon:=yes}
 
 : ${slapd_services:=ldapi:/// ldap:///}
 : ${slapd_debuglevel:=0}
@@ -43,12 +45,11 @@ if [ ! -f "/etc/ldap/slapd.d/cn=config.ldif" ]; then
       sleep 1
   done
 
-  if [ "$slapd_enable_ssl" = yes ]; then
-      ldapmodify -H ldapi:/// -Y EXTERNAL <<EOF
+  [ "$slapd_enable_ssl" = yes ] && ldapmodify -H ldapi:/// -Y EXTERNAL <<EOF
 dn: cn=config
 changetype: modify
 replace: olcTLSCipherSuite
-olcTLSCipherSuite: $slapd_ssl_cipher_suite
+olcTLSCipherSuite: SECURE256:+SECURE128:-VERS-TLS-ALL:+VERS-TLS1.2:-RSA:-DHE-DSS:-CAMELLIA-128-CBC:-CAMELLIA-256-CBC
 -
 replace: olcTLSCACertificateFile
 olcTLSCACertificateFile: $slapd_ssl_ca_cert_file
@@ -59,7 +60,26 @@ olcTLSCertificateFile: $slapd_ssl_cert_file
 replace: olcTLSCertificateKeyFile
 olcTLSCertificateKeyFile: $slapd_ssl_key_file
 EOF
-  fi
+
+  [ "$slapd_require_ssl" = yes ] && ldapmodify -H ldapi:/// -Y EXTERNAL <<EOF
+dn: cn=config
+changetype: modify
+replace: olcLocalSSF
+olcLocalSSF: 128
+-
+replace: olcSecurity
+olcSecurity: ssf=128
+EOF
+
+  [ "$slapd_disable_anon" = yes ] && ldapmodify -H ldapi:/// -Y EXTERNAL <<EOF
+dn: cn=config
+changetype: modify
+replace: olcDisallows
+olcDisallows: bind_anon
+-
+replace: olcRequires
+olcRequires: authc
+EOF
 
   # make sure that slapd is not running
   while pkill -INT slapd; do sleep 1; done
