@@ -6,7 +6,7 @@
 : ${slapd_admin_password:=$(pwgen -s1 32)}
 
 : ${slapd_enable_ssl:=yes}
-: ${slapd_ssl_hostname:=$(hostname)}
+: ${slapd_ssl_hostname:=$slapd_domain}
 : ${slapd_ssl_ca_cert_file:=/etc/ssl/certs/ca-certificates.crt}
 : ${slapd_ssl_cert_file:=/usr/local/share/ca-certificates/slapd.crt}
 : ${slapd_ssl_key_file:=/etc/ssl/private/slapd.key}
@@ -20,8 +20,9 @@
 
 umask 0022
 
-if [ "$slapd_enable_ssl" = "yes" ] && [ -n "$slapd_ssl_cert_file" ] && \
-    ! [ -f "$slapd_ssl_cert_file" ]; then
+echo "127.0.1.1\t$slapd_domain" >> /etc/hosts
+
+if [ "$slapd_enable_ssl" = "yes" ] && ! [ -f "$slapd_ssl_cert_file" ]; then
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
         -subj "/CN=$slapd_ssl_hostname" \
         -out $slapd_ssl_cert_file -keyout $slapd_ssl_key_file
