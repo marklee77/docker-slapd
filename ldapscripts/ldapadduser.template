@@ -1,0 +1,14 @@
+dn: uid=<user>,<usuffix>,<suffix>
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+objectClass: posixAccount
+cn: <user>
+displayName: <user>
+sn: X
+uid: <user>
+uidNumber: <uid>
+gidNumber: <gid>
+homeDirectory: <home>
+loginShell: <shell>

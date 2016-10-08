@@ -16,6 +16,7 @@ RUN rm -rf /etc/ldap/slapd.d/* /var/lib/ldap/*
 RUN rm -f /etc/ldap/ldap.conf /etc/ldapscripts/ldapscripts.passwd
 
 COPY slapd.sh /etc/service/slapd/run
+COPY ldapscripts/* /etc/ldapscripts/
 
 VOLUME [ "/etc/ldap", "/var/lib/ldap", "/var/run/ldap", "/var/log" ]
 

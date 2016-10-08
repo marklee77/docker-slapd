@@ -6,12 +6,11 @@
 : ${slapd_admin_password:=$(pwgen -s1 32)}
 
 : ${slapd_enable_ssl:=yes}
+: ${slapd_require_ssl:=yes}
 : ${slapd_ssl_hostname:=$slapd_domain}
 : ${slapd_ssl_ca_cert_file:=/etc/ssl/certs/ca-certificates.crt}
 : ${slapd_ssl_cert_file:=/usr/local/share/ca-certificates/slapd.crt}
 : ${slapd_ssl_key_file:=/etc/ssl/private/slapd.key}
-
-: ${slapd_require_ssl:=yes}
 
 : ${slapd_disable_anon:=yes}
 
@@ -42,8 +41,11 @@ TLS_CACERT $slapd_ssl_ca_cert_file
 SASL_MECH EXTERNAL
 EOF
 
+echo "BINDDN='cn=admin,$slapd_base_dn'" >> /etc/ldapscripts/ldapscripts.conf
+echo "SUFFIX='$slapd_base_dn'" >> /etc/ldapscripts/ldapscripts.conf
+echo "mail: <user>@$slapd_domain" >> /etc/ldapscripts/ldapadduser.template
 echo -n "$slapd_admin_password" > /etc/ldapscripts/ldapscripts.passwd
-chmod 0640 /etc/ldapscripts/ldapscripts.passwd
+chmod 0600 /etc/ldapscripts/ldapscripts.passwd
 
 slapd_admin_password_hash=$(slappasswd -s "$slapd_admin_password")
 cat /usr/share/slapd/slapd.init.ldif | \
@@ -141,7 +143,6 @@ olcOverlay: unique
 olcUniqueURI: ldap:///?uid,uidNumber,mail?sub
 EOF
 
-# create organisation and organisational units
 ldapadd -D cn=admin,$slapd_base_dn -y /etc/ldapscripts/ldapscripts.passwd <<EOF
 dn: $slapd_base_dn
 objectClass: dcObject
