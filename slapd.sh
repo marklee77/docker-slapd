@@ -81,6 +81,80 @@ replace: olcRequires
 olcRequires: authc
 EOF
 
+    # load desired modules
+    ldapadd -H ldapi:/// -Y EXTERNAL <<EOF
+dn: cn=module,cn=config
+cn: module
+objectClass: olcModuleList
+objectClass: top
+olcModuleLoad: memberof.la
+olcModulePath: /usr/lib/ldap
+
+dn: olcOverlay=memberof,olcDatabase={1}mdb,cn=config
+objectClass: olcConfig
+objectClass: olcOverlayConfig
+objectClass: olcMemberOf
+objectClass: top
+olcOverlay: memberof
+
+dn: cn=module,cn=config
+cn: module
+objectClass: olcModuleList
+objectClass: top
+olcModuleLoad: refint.la
+olcModulePath: /usr/lib/ldap
+
+dn: olcOverlay=refint,olcDatabase={1}mdb,cn=config
+objectClass: olcConfig
+objectClass: olcOverlayConfig
+objectClass: olcRefintConfig
+objectClass: top
+olcOverlay: refint
+olcRefintAttribute: memberof member manager owner
+
+dn: cn=module,cn=config
+cn: module
+objectClass: olcModuleList
+objectClass: top
+olcModuleLoad: unique.la
+olcModulePath: /usr/lib/ldap
+
+dn: olcOverlay=unique,olcDatabase={1}mdb,cn=config
+objectClass: olcConfig
+objectClass: olcOverlayConfig
+objectClass: olcUniqueConfig
+objectClass: top
+olcOverlay: unique
+olcUniqueURI: ldap:///?uid,uidNumber,mail?sub
+EOF
+
+    # limit user access to prevent privilege escalation
+#    ldapmodify -H ldapi:/// -Y EXTERNAL <<EOF
+#dn: olcDatabase={1}mdb,cn=config
+#changetype: modify
+#add: olcAccess
+#EOF
+
+    # create organisational units
+    ldapadd -H ldapi:/// -Y EXTERNAL <<EOF
+dn: ou=users,$slapd_base_dn
+objectClass: organizationalUnit
+ou: users
+
+dn: ou=groups,$slapd_base_dn
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=services,$slapd_base_dn
+objectClass: organizationalUnit
+ou: services
+
+dn: ou=machines,$slapd_base_dn
+objectClass: organizationalUnit
+ou: machines
+EOF
+
+    # create indexes
     # make sure that slapd is not running
     while pkill -INT slapd; do sleep 1; done
 
