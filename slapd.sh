@@ -20,6 +20,10 @@
 
 umask 0022
 
+if [ -f "/etc/ldap/slapd.d/cn=config.ldif" ]; then
+    exec /usr/sbin/slapd -d $slapd_debuglevel -h "$slapd_services" -g openldap -u openldap -F /etc/ldap/slapd.d
+fi
+
 echo "127.0.1.1\t$slapd_domain" >> /etc/hosts
 
 if [ "$slapd_enable_ssl" = "yes" ] && ! [ -f "$slapd_ssl_cert_file" ]; then
@@ -41,25 +45,21 @@ EOF
 echo -n "$slapd_admin_password" > /etc/ldapscripts/ldapscripts.passwd
 chmod 0640 /etc/ldapscripts/ldapscripts.passwd
 
-if [ ! -f "/etc/ldap/slapd.d/cn=config.ldif" ]; then
+slapd_admin_password_hash=$(slappasswd -s "$slapd_admin_password")
+cat /usr/share/slapd/slapd.init.ldif | \
+    sed "s|@BACKEND@|mdb|g" | \
+    sed "s|@BACKENDOBJECTCLASS@|olcMdbConfig|g" | \
+    sed "s|@BACKENDOPTIONS@|olcDbMaxSize: 1073741824|g" | \
+    sed "s|@SUFFIX@|$slapd_base_dn|g" | \
+    sed "s|@PASSWORD@|$slapd_admin_password_hash|g" | \
+    slapadd -b cn=config -F /etc/ldap/slapd.d
+chown -R openldap:openldap /etc/ldap/slapd.d
 
-    slapd_admin_password_hash=$(slappasswd -s "$slapd_admin_password")
-    cat /usr/share/slapd/slapd.init.ldif | \
-        sed "s|@BACKEND@|mdb|g" | \
-        sed "s|@BACKENDOBJECTCLASS@|olcMdbConfig|g" | \
-        sed "s|@BACKENDOPTIONS@|olcDbMaxSize: 1073741824|g" | \
-        sed "s|@SUFFIX@|$slapd_base_dn|g" | \
-        sed "s|@PASSWORD@|$slapd_admin_password_hash|g" | \
-        slapadd -b cn=config -F /etc/ldap/slapd.d
-    chown -R openldap:openldap /etc/ldap/slapd.d
+# start slapd on local socket and wait for it to come up
+/usr/sbin/slapd -h ldapi:/// -g openldap -u openldap -F /etc/ldap/slapd.d
+while ! ldapsearch -b cn=config >/dev/null 2>&1; do sleep 1; done
 
-    # start slapd on local socket and wait for it to come up
-    /usr/sbin/slapd -h ldapi:/// -g openldap -u openldap -F /etc/ldap/slapd.d
-    while ! ldapsearch -b cn=config >/dev/null 2>&1; do
-        sleep 1
-    done
-
-    [ "$slapd_enable_ssl" = yes ] && ldapmodify <<EOF
+[ "$slapd_enable_ssl" = yes ] && ldapmodify <<EOF
 dn: cn=config
 changetype: modify
 replace: olcTLSCipherSuite
@@ -75,7 +75,7 @@ replace: olcTLSCertificateKeyFile
 olcTLSCertificateKeyFile: $slapd_ssl_key_file
 EOF
 
-    [ "$slapd_require_ssl" = yes ] && ldapmodify <<EOF
+[ "$slapd_require_ssl" = yes ] && ldapmodify <<EOF
 dn: cn=config
 changetype: modify
 replace: olcLocalSSF
@@ -85,7 +85,7 @@ replace: olcSecurity
 olcSecurity: ssf=128
 EOF
 
-    [ "$slapd_disable_anon" = yes ] && ldapmodify <<EOF
+[ "$slapd_disable_anon" = yes ] && ldapmodify <<EOF
 dn: cn=config
 changetype: modify
 replace: olcDisallows
@@ -95,8 +95,7 @@ replace: olcRequires
 olcRequires: authc
 EOF
 
-    # load desired modules
-    ldapadd <<EOF
+ldapadd <<EOF
 dn: cn=module,cn=config
 cn: module
 objectClass: olcModuleList
@@ -142,8 +141,8 @@ olcOverlay: unique
 olcUniqueURI: ldap:///?uid,uidNumber,mail?sub
 EOF
 
-    # create organisation and organisational units
-    ldapadd -D cn=admin,$slapd_base_dn -y /etc/ldapscripts/ldapscripts.passwd <<EOF
+# create organisation and organisational units
+ldapadd -D cn=admin,$slapd_base_dn -y /etc/ldapscripts/ldapscripts.passwd <<EOF
 dn: $slapd_base_dn
 objectClass: dcObject
 objectClass: organization
@@ -166,9 +165,5 @@ objectClass: organizationalUnit
 ou: machines
 EOF
 
-    # make sure that slapd is not running
-    while pkill -INT slapd; do sleep 1; done
-
-fi
-
-exec /usr/sbin/slapd -d $slapd_debuglevel -h "${slapd_services}" -g openldap -u openldap -F /etc/ldap/slapd.d
+# make sure that slapd is not running
+while pkill -INT slapd; do sleep 1; done
