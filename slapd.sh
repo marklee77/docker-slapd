@@ -2,6 +2,7 @@
 
 : ${slapd_domain:=localdomain}
 : ${slapd_base_dn:=dc=$(echo $slapd_domain | sed 's/^\.//; s/\./,dc=/g')}
+: ${slapd_organization:=$slapd_domain}
 : ${slapd_admin_password:=$(pwgen -s1 32)}
 
 : ${slapd_enable_ssl:=yes}
@@ -27,6 +28,20 @@ if [ "$slapd_enable_ssl" = "yes" ] && [ -n "$slapd_ssl_cert_file" ] && \
     update-ca-certificates
 fi
 
+if [ ! -f /etc/ldap/ldap.conf ]; then
+    cat > /etc/ldap/ldap.conf <<EOF
+URI ldapi:///
+BASE $slapd_base_dn
+TLS_CACERT $slapd_ssl_ca_cert_file
+SASL_MECH EXTERNAL
+EOF
+fi
+
+if [ ! -f /etc/ldapscripts/ldapscripts.passwd ]; then
+    echo -n "$slapd_admin_password" > /etc/ldapscripts/ldapscripts.passwd
+    chmod 0640 /etc/ldapscripts/ldapscripts.passwd
+fi
+
 if [ ! -f "/etc/ldap/slapd.d/cn=config.ldif" ]; then
 
     slapd_admin_password_hash=$(slappasswd -s "$slapd_admin_password")
@@ -41,11 +56,11 @@ if [ ! -f "/etc/ldap/slapd.d/cn=config.ldif" ]; then
 
     # start slapd on local socket and wait for it to come up
     /usr/sbin/slapd -h ldapi:/// -g openldap -u openldap -F /etc/ldap/slapd.d
-    while ! ldapsearch -H ldapi:/// -Y EXTERNAL -b cn=config >/dev/null 2>&1; do
+    while ! ldapsearch -b cn=config >/dev/null 2>&1; do
         sleep 1
     done
 
-    [ "$slapd_enable_ssl" = yes ] && ldapmodify -H ldapi:/// -Y EXTERNAL <<EOF
+    [ "$slapd_enable_ssl" = yes ] && ldapmodify <<EOF
 dn: cn=config
 changetype: modify
 replace: olcTLSCipherSuite
@@ -61,7 +76,7 @@ replace: olcTLSCertificateKeyFile
 olcTLSCertificateKeyFile: $slapd_ssl_key_file
 EOF
 
-    [ "$slapd_require_ssl" = yes ] && ldapmodify -H ldapi:/// -Y EXTERNAL <<EOF
+    [ "$slapd_require_ssl" = yes ] && ldapmodify <<EOF
 dn: cn=config
 changetype: modify
 replace: olcLocalSSF
@@ -71,7 +86,7 @@ replace: olcSecurity
 olcSecurity: ssf=128
 EOF
 
-    [ "$slapd_disable_anon" = yes ] && ldapmodify -H ldapi:/// -Y EXTERNAL <<EOF
+    [ "$slapd_disable_anon" = yes ] && ldapmodify <<EOF
 dn: cn=config
 changetype: modify
 replace: olcDisallows
@@ -82,7 +97,7 @@ olcRequires: authc
 EOF
 
     # load desired modules
-    ldapadd -H ldapi:/// -Y EXTERNAL <<EOF
+    ldapadd <<EOF
 dn: cn=module,cn=config
 cn: module
 objectClass: olcModuleList
@@ -128,15 +143,13 @@ olcOverlay: unique
 olcUniqueURI: ldap:///?uid,uidNumber,mail?sub
 EOF
 
-    # limit user access to prevent privilege escalation
-#    ldapmodify -H ldapi:/// -Y EXTERNAL <<EOF
-#dn: olcDatabase={1}mdb,cn=config
-#changetype: modify
-#add: olcAccess
-#EOF
+    # create organisation and organisational units
+    ldapadd -D cn=admin,$slapd_base_dn -y /etc/ldapscripts/ldapscripts.passwd <<EOF
+dn: $slapd_base_dn
+objectClass: dcObject
+objectClass: organization
+o: $slapd_organization
 
-    # create organisational units
-    ldapadd -H ldapi:/// -Y EXTERNAL <<EOF
 dn: ou=users,$slapd_base_dn
 objectClass: organizationalUnit
 ou: users
@@ -154,23 +167,18 @@ objectClass: organizationalUnit
 ou: machines
 EOF
 
+    # limit user access to prevent privilege escalation
+#    ldapmodify -H ldapi:/// <<EOF
+#dn: olcDatabase={1}mdb,cn=config
+#changetype: modify
+#add: olcAccess
+#EOF
+
     # create indexes
+
     # make sure that slapd is not running
     while pkill -INT slapd; do sleep 1; done
 
-fi
-
-if [ ! -f /etc/ldap/ldap.conf ]; then
-    cat > /etc/ldap/ldap.conf <<EOF
-URI ldapi:///
-BASE $slapd_base_dn
-TLS_CACERT /etc/ssl/certs/ca-certificates.crt
-EOF
-fi
-
-if [ ! -f /etc/ldapscripts/ldapscripts.passwd ]; then
-    echo "$slapd_admin_password" > /etc/ldapscripts/ldapscripts.passwd
-    chmod 0640 /etc/ldapscripts/ldapscripts.passwd
 fi
 
 exec /usr/sbin/slapd -d $slapd_debuglevel -h "${slapd_services}" -g openldap -u openldap -F /etc/ldap/slapd.d
