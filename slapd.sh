@@ -26,22 +26,20 @@ if [ "$slapd_enable_ssl" = "yes" ] && ! [ -f "$slapd_ssl_cert_file" ]; then
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
         -subj "/CN=$slapd_ssl_hostname" \
         -out $slapd_ssl_cert_file -keyout $slapd_ssl_key_file
-    update-ca-certificates
 fi
 
-if [ ! -f /etc/ldap/ldap.conf ]; then
-    cat > /etc/ldap/ldap.conf <<EOF
+# in case user maps a ca cert into /usr/local/share/ca-certificates
+update-ca-certificates
+
+cat > /etc/ldap/ldap.conf <<EOF
 URI ldapi:///
 BASE $slapd_base_dn
 TLS_CACERT $slapd_ssl_ca_cert_file
 SASL_MECH EXTERNAL
 EOF
-fi
 
-if [ ! -f /etc/ldapscripts/ldapscripts.passwd ]; then
-    echo -n "$slapd_admin_password" > /etc/ldapscripts/ldapscripts.passwd
-    chmod 0640 /etc/ldapscripts/ldapscripts.passwd
-fi
+echo -n "$slapd_admin_password" > /etc/ldapscripts/ldapscripts.passwd
+chmod 0640 /etc/ldapscripts/ldapscripts.passwd
 
 if [ ! -f "/etc/ldap/slapd.d/cn=config.ldif" ]; then
 
@@ -167,15 +165,6 @@ dn: ou=machines,$slapd_base_dn
 objectClass: organizationalUnit
 ou: machines
 EOF
-
-    # limit user access to prevent privilege escalation
-#    ldapmodify -H ldapi:/// <<EOF
-#dn: olcDatabase={1}mdb,cn=config
-#changetype: modify
-#add: olcAccess
-#EOF
-
-    # create indexes
 
     # make sure that slapd is not running
     while pkill -INT slapd; do sleep 1; done
