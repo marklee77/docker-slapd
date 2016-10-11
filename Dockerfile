@@ -18,6 +18,8 @@ RUN rm -f /etc/ldap/ldap.conf /etc/ldapscripts/ldapscripts.passwd
 COPY slapd.sh /etc/service/slapd/run
 COPY ldapscripts/* /etc/ldapscripts/
 
-VOLUME [ "/etc/ldap", "/etc/ldapscripts", "/var/lib/ldap", "/var/run/ldap", "/var/log" ]
+VOLUME [ "/etc/ldap", "/etc/ldapscripts", "/etc/ssl", \
+         "/usr/local/share/ca-certificates", "/var/lib/ldap", "/var/log", \
+         "/var/run/ldap" ]
 
 EXPOSE 389 636
