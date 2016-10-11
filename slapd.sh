@@ -47,7 +47,7 @@ echo "mail: <user>@$slapd_domain" >> /etc/ldapscripts/ldapadduser.template
 echo -n "$slapd_admin_password" > /etc/ldapscripts/ldapscripts.passwd
 chmod 0600 /etc/ldapscripts/ldapscripts.passwd
 
-slapd_admin_password_hash=$(slappasswd -s "$slapd_admin_password")
+slapd_admin_password_hash=$(slappasswd -T /etc/ldapscripts/ldapscripts.passwd)
 cat /usr/share/slapd/slapd.init.ldif | \
     sed "s|@BACKEND@|mdb|g" | \
     sed "s|@BACKENDOBJECTCLASS@|olcMdbConfig|g" | \
