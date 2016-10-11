@@ -23,8 +23,6 @@ if [ -f "/etc/ldap/slapd.d/cn=config.ldif" ]; then
     exec /usr/sbin/slapd -d $slapd_debuglevel -h "$slapd_services" -g openldap -u openldap -F /etc/ldap/slapd.d
 fi
 
-echo "127.0.1.1\t$slapd_domain" >> /etc/hosts
-
 if [ "$slapd_enable_ssl" = "yes" ] && ! [ -f "$slapd_ssl_cert_file" ]; then
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
         -subj "/CN=$slapd_ssl_hostname" \
