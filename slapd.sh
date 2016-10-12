@@ -1,7 +1,7 @@
 #!/bin/bash
 
 : ${slapd_domain:=localdomain}
-: ${slapd_base_dn:=dc=$(echo $slapd_domain | sed 's/^\.//; s/\./,dc=/g')}
+: ${slapd_basedn:=dc=$(echo $slapd_domain | sed 's/^\.//; s/\./,dc=/g')}
 : ${slapd_organization:=$slapd_domain}
 : ${slapd_admin_password:=$(pwgen -s1 32)}
 
@@ -34,13 +34,13 @@ update-ca-certificates
 
 cat > /etc/ldap/ldap.conf <<EOF
 URI ldapi:///
-BASE $slapd_base_dn
+BASE $slapd_basedn
 TLS_CACERT $slapd_ssl_ca_cert_file
 SASL_MECH EXTERNAL
 EOF
 
-echo "BINDDN='cn=admin,$slapd_base_dn'" >> /etc/ldapscripts/ldapscripts.conf
-echo "SUFFIX='$slapd_base_dn'" >> /etc/ldapscripts/ldapscripts.conf
+echo "BINDDN='cn=admin,$slapd_basedn'" >> /etc/ldapscripts/ldapscripts.conf
+echo "SUFFIX='$slapd_basedn'" >> /etc/ldapscripts/ldapscripts.conf
 echo "mail: <user>@$slapd_domain" >> /etc/ldapscripts/ldapadduser.template
 echo -n "$slapd_admin_password" > /etc/ldapscripts/ldapscripts.passwd
 chmod 0600 /etc/ldapscripts/ldapscripts.passwd
@@ -50,7 +50,7 @@ cat /usr/share/slapd/slapd.init.ldif | \
     sed "s|@BACKEND@|mdb|g" | \
     sed "s|@BACKENDOBJECTCLASS@|olcMdbConfig|g" | \
     sed "s|@BACKENDOPTIONS@|olcDbMaxSize: 1073741824|g" | \
-    sed "s|@SUFFIX@|$slapd_base_dn|g" | \
+    sed "s|@SUFFIX@|$slapd_basedn|g" | \
     sed "s|@PASSWORD@|$slapd_admin_password_hash|g" | \
     slapadd -b cn=config -F /etc/ldap/slapd.d
 chown -R openldap:openldap /etc/ldap/slapd.d
@@ -141,25 +141,25 @@ olcOverlay: unique
 olcUniqueURI: ldap:///?uid,uidNumber,mail?sub
 EOF
 
-ldapadd -D cn=admin,$slapd_base_dn -y /etc/ldapscripts/ldapscripts.passwd <<EOF
-dn: $slapd_base_dn
+ldapadd -D cn=admin,$slapd_basedn -y /etc/ldapscripts/ldapscripts.passwd <<EOF
+dn: $slapd_basedn
 objectClass: dcObject
 objectClass: organization
 o: $slapd_organization
 
-dn: ou=users,$slapd_base_dn
+dn: ou=users,$slapd_basedn
 objectClass: organizationalUnit
 ou: users
 
-dn: ou=groups,$slapd_base_dn
+dn: ou=groups,$slapd_basedn
 objectClass: organizationalUnit
 ou: groups
 
-dn: ou=services,$slapd_base_dn
+dn: ou=services,$slapd_basedn
 objectClass: organizationalUnit
 ou: services
 
-dn: ou=machines,$slapd_base_dn
+dn: ou=machines,$slapd_basedn
 objectClass: organizationalUnit
 ou: machines
 EOF

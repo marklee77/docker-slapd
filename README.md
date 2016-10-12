@@ -6,7 +6,7 @@ This docker image configures and launches slapd, for use as an openldap authenti
 Parameters and default values:
 
 - slapd_domain (localdomain)
-- slapd_base_dn (based on slapd_domain)
+- slapd_basedn (based on slapd_domain)
 - slapd_organization (slapd_domain)
 - slapd_admin_password (random)
 - slapd_enable_ssl (yes)
