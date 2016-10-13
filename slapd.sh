@@ -147,13 +147,13 @@ objectClass: dcObject
 objectClass: organization
 o: $slapd_organization
 
-dn: ou=users,$slapd_basedn
-objectClass: organizationalUnit
-ou: users
-
 dn: ou=groups,$slapd_basedn
 objectClass: organizationalUnit
 ou: groups
+
+dn: ou=users,$slapd_basedn
+objectClass: organizationalUnit
+ou: users
 
 dn: ou=services,$slapd_basedn
 objectClass: organizationalUnit
@@ -163,6 +163,10 @@ dn: ou=machines,$slapd_basedn
 objectClass: organizationalUnit
 ou: machines
 EOF
+
+ldapaddgroup users
+ldapaddgroup services
+ldapaddgroup machines
 
 # make sure that slapd is not running
 while pkill -INT slapd; do sleep 1; done
