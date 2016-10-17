@@ -151,9 +151,9 @@ dn: ou=groups,$slapd_basedn
 objectClass: organizationalUnit
 ou: groups
 
-dn: ou=users,$slapd_basedn
+dn: ou=people,$slapd_basedn
 objectClass: organizationalUnit
-ou: users
+ou: people
 
 dn: ou=services,$slapd_basedn
 objectClass: organizationalUnit
@@ -164,7 +164,7 @@ objectClass: organizationalUnit
 ou: machines
 EOF
 
-ldapaddgroup users
+ldapaddgroup people
 ldapaddgroup services
 ldapaddgroup machines
 
