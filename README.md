@@ -1,7 +1,7 @@
-marklee77/slapd-auth
-====================
+marklee77/slapd
+===============
 
-This docker image configures and launches slapd, for use as an openldap authentication server.
+This docker image configures and launches slapd.
 
 Parameters and default values:
 

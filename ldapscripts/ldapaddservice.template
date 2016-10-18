@@ -1,9 +1,0 @@
-dn: uid=<user>,ou=services,<suffix>
-objectClass: device
-objectClass: posixAccount
-cn: <user>
-uid: <user>
-uidNumber: <uid>
-gidNumber: <gid>
-homeDirectory: /dev/null
-loginShell: /bin/false

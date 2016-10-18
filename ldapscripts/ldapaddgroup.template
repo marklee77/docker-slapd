@@ -1,5 +1,0 @@
-dn: cn=<group>,<gsuffix>,<suffix>
-objectClass: top
-objectClass: posixGroup
-cn: <group>
-gidNumber: <gid>

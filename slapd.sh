@@ -39,19 +39,15 @@ TLS_CACERT $slapd_ssl_ca_cert_file
 SASL_MECH EXTERNAL
 EOF
 
-echo "BINDDN='cn=admin,$slapd_basedn'" >> /etc/ldapscripts/ldapscripts.conf
-echo "SUFFIX='$slapd_basedn'" >> /etc/ldapscripts/ldapscripts.conf
-echo "mail: <user>@$slapd_domain" >> /etc/ldapscripts/ldapadduser.template
-echo -n "$slapd_admin_password" > /etc/ldapscripts/ldapscripts.passwd
-chmod 0600 /etc/ldapscripts/ldapscripts.passwd
+echo -n "$slapd_admin_password" > /etc/ldap/ldap.passwd
+chmod 0600 /etc/ldap/ldap.passwd
 
-slapd_admin_password_hash=$(slappasswd -T /etc/ldapscripts/ldapscripts.passwd)
 cat /usr/share/slapd/slapd.init.ldif | \
     sed "s|@BACKEND@|mdb|g" | \
     sed "s|@BACKENDOBJECTCLASS@|olcMdbConfig|g" | \
     sed "s|@BACKENDOPTIONS@|olcDbMaxSize: 1073741824|g" | \
     sed "s|@SUFFIX@|$slapd_basedn|g" | \
-    sed "s|@PASSWORD@|$slapd_admin_password_hash|g" | \
+    sed "s|@PASSWORD@|$(slappasswd -T /etc/ldap/ldap.passwd)|g" | \
     slapadd -b cn=config -F /etc/ldap/slapd.d
 chown -R openldap:openldap /etc/ldap/slapd.d
 
@@ -94,79 +90,6 @@ olcDisallows: bind_anon
 replace: olcRequires
 olcRequires: authc
 EOF
-
-ldapadd <<EOF
-dn: cn=module,cn=config
-cn: module
-objectClass: olcModuleList
-objectClass: top
-olcModuleLoad: memberof.la
-olcModulePath: /usr/lib/ldap
-
-dn: olcOverlay=memberof,olcDatabase={1}mdb,cn=config
-objectClass: olcConfig
-objectClass: olcOverlayConfig
-objectClass: olcMemberOf
-objectClass: top
-olcOverlay: memberof
-
-dn: cn=module,cn=config
-cn: module
-objectClass: olcModuleList
-objectClass: top
-olcModuleLoad: refint.la
-olcModulePath: /usr/lib/ldap
-
-dn: olcOverlay=refint,olcDatabase={1}mdb,cn=config
-objectClass: olcConfig
-objectClass: olcOverlayConfig
-objectClass: olcRefintConfig
-objectClass: top
-olcOverlay: refint
-olcRefintAttribute: memberof member manager owner
-
-dn: cn=module,cn=config
-cn: module
-objectClass: olcModuleList
-objectClass: top
-olcModuleLoad: unique.la
-olcModulePath: /usr/lib/ldap
-
-dn: olcOverlay=unique,olcDatabase={1}mdb,cn=config
-objectClass: olcConfig
-objectClass: olcOverlayConfig
-objectClass: olcUniqueConfig
-objectClass: top
-olcOverlay: unique
-olcUniqueURI: ldap:///?uid,uidNumber,mail?sub
-EOF
-
-ldapadd -D cn=admin,$slapd_basedn -y /etc/ldapscripts/ldapscripts.passwd <<EOF
-dn: $slapd_basedn
-objectClass: dcObject
-objectClass: organization
-o: $slapd_organization
-
-dn: ou=groups,$slapd_basedn
-objectClass: organizationalUnit
-ou: groups
-
-dn: ou=people,$slapd_basedn
-objectClass: organizationalUnit
-ou: people
-
-dn: ou=services,$slapd_basedn
-objectClass: organizationalUnit
-ou: services
-
-dn: ou=machines,$slapd_basedn
-objectClass: organizationalUnit
-ou: machines
-EOF
-
-ldapaddgroup people
-ldapaddgroup services
-ldapaddgroup machines
 
 # make sure that slapd is not running
 while pkill -INT slapd; do sleep 1; done
