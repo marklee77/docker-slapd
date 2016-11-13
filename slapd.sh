@@ -91,8 +91,8 @@ replace: olcRequires
 olcRequires: authc
 EOF
 
-for file in $(find /etc/ldap/dbinit.d -type f | sort); do
-    [ -x $file ] && $file
+for file in $(find -L /etc/ldap/dbinit.d -type f -executable | sort); do
+    $file
 done
 
 # make sure that slapd is not running
