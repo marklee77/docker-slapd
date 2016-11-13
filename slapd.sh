@@ -92,7 +92,7 @@ olcRequires: authc
 EOF
 
 for file in $(find /etc/ldap/dbinit.d -type f | sort); do
-    source $file
+    [ -x $file ] && $file
 done
 
 # make sure that slapd is not running

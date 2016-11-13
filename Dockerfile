@@ -6,6 +6,7 @@ RUN apt-get update && \
     apt-get -y install \
         ca-certificates \
         ldap-utils \
+        pwgen \
         slapd \
         ssl-cert && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/*
