@@ -19,6 +19,6 @@ RUN mkdir -p /etc/ldap/dbinit.d
 COPY slapd.sh /etc/service/slapd/run
 
 VOLUME [ "/etc/ldap/slapd.d", "/etc/ssl", "/usr/local/share/ca-certificates", \
-         "/var/lib/ldap", "/var/log", "/var/run/ldap" ]
+         "/var/lib/ldap", "/var/run/ldap" ]
 
 EXPOSE 389 636
