@@ -7,7 +7,6 @@ Parameters and default values:
 
 - slapd_domain (localdomain)
 - slapd_basedn (based on slapd_domain)
-- slapd_organization (slapd_domain)
 - slapd_admin_password (random)
 - slapd_enable_ssl (yes)
 - slapd_require_ssl (yes)

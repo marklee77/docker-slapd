@@ -2,7 +2,6 @@
 
 : ${slapd_domain:=localdomain}
 : ${slapd_basedn:=dc=$(echo $slapd_domain | sed 's/^\.//; s/\./,dc=/g')}
-: ${slapd_organization:=$slapd_domain}
 : ${slapd_admin_password:=$(pwgen -s1 32)}
 
 : ${slapd_enable_ssl:=yes}
