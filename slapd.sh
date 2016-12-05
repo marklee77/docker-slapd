@@ -87,6 +87,7 @@ replace: olcRequires
 olcRequires: authc
 EOF
 
+export slapd_basedn slapd_admin_password
 for file in $(find -L /etc/ldap/dbinit.d -type f -executable | sort); do
     $file
 done
