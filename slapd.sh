@@ -1,12 +1,10 @@
 #!/bin/bash
 
-: ${slapd_domain:=localdomain}
-: ${slapd_basedn:=dc=$(echo $slapd_domain | sed 's/^\.//; s/\./,dc=/g')}
+: ${slapd_basedn:=dc=ldap,dc=dit}
 : ${slapd_admin_password:=$(pwgen -s1 32)}
 
 : ${slapd_enable_ssl:=yes}
 : ${slapd_require_ssl:=yes}
-: ${slapd_ssl_hostname:=$slapd_domain}
 : ${slapd_ssl_ca_cert_file:=/etc/ssl/certs/ca-certificates.crt}
 : ${slapd_ssl_cert_file:=/usr/local/share/ca-certificates/slapd.crt}
 : ${slapd_ssl_key_file:=/etc/ssl/private/slapd.key}
@@ -24,11 +22,10 @@ fi
 
 if [ "$slapd_enable_ssl" = "yes" ] && ! [ -f "$slapd_ssl_cert_file" ]; then
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
-        -subj "/CN=$slapd_ssl_hostname" \
+        -subj "/CN=$(hostname)" \
         -out $slapd_ssl_cert_file -keyout $slapd_ssl_key_file
 fi
 
-# in case user maps a ca cert into /usr/local/share/ca-certificates
 update-ca-certificates
 
 cat > /etc/ldap/ldap.conf <<EOF
