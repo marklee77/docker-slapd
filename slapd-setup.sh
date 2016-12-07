@@ -11,14 +11,9 @@
 
 : ${slapd_disable_anon:=yes}
 
-: ${slapd_services:=ldapi:/// ldap:///}
-: ${slapd_debuglevel:=0}
-
 umask 0022
 
-if [ -f "/etc/ldap/slapd.d/cn=config.ldif" ]; then
-    exec /usr/sbin/slapd -d $slapd_debuglevel -h "$slapd_services" -g openldap -u openldap -F /etc/ldap/slapd.d
-fi
+[ -f "/etc/ldap/slapd.d/cn=config.ldif" ] && exit 0
 
 if [ "$slapd_enable_ssl" = "yes" ] && ! [ -f "$slapd_ssl_cert_file" ]; then
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
@@ -93,4 +88,4 @@ for file in $(find -L /etc/ldap/dbinit.d -type f -executable | sort); do
 done
 
 # make sure that slapd is not running
-while pkill -INT slapd; do sleep 1; done
+while pkill -INT /usr/sbin/slapd; do sleep 1; done
