@@ -22,7 +22,6 @@ RUN chmod 755 /etc/my_init.d/00-slapd-setup /usr/local/sbin/slapd-run
 
 COPY slapd.conf /etc/supervisor/conf.d
 
-VOLUME [ "/etc/ldap/slapd.d", "/etc/ssl", "/usr/local/share/ca-certificates", \
-         "/var/lib/ldap", "/var/run/slapd" ]
+VOLUME [ "/etc/ldap/slapd.d", "/var/lib/ldap" ]
 
 EXPOSE 389 636
