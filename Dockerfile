@@ -16,9 +16,9 @@ RUN rm -rf /etc/ldap/slapd.d/* /var/lib/ldap/*
 RUN rm -f /etc/ldap/ldap.conf
 RUN mkdir -p /etc/ldap/dbinit.d
 
-COPY slapd-setup.sh /etc/my_init.d
-COPY slapd-run.sh /usr/local/sbin/slapd-run.sh
-RUN chmod 755 /etc/my_init.d/slapd-setup.sh /usr/local/sbin/slapd-run.sh
+COPY slapd-setup.sh /etc/my_init.d/00-slapd-setup
+COPY slapd-run.sh /usr/local/sbin/slapd-run
+RUN chmod 755 /etc/my_init.d/00-slapd-setup /usr/local/sbin/slapd-run
 
 COPY slapd.conf /etc/supervisor/conf.d
 
