@@ -88,4 +88,4 @@ for file in $(find -L /etc/ldap/dbinit.d -type f -executable | sort); do
 done
 
 # make sure that slapd is not running
-while pkill -INT /usr/sbin/slapd; do sleep 1; done
+while kill -INT $(cat /var/run/slapd/slapd.pid); do sleep 1; done
