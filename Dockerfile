@@ -14,7 +14,7 @@ RUN apt-get update && \
 RUN usermod -a -G ssl-cert openldap
 RUN rm -rf /etc/ldap/slapd.d/* /var/lib/ldap/*
 RUN rm -f /etc/ldap/ldap.conf
-RUN mkdir -p /etc/ldap/dbinit.d
+RUN mkdir -p /etc/ldap/dbinit.d /etc/ssl/slapd
 
 COPY slapd-setup.sh /etc/my_init.d/00-slapd-setup
 COPY slapd-run.sh /usr/local/sbin/slapd-run
@@ -22,6 +22,6 @@ RUN chmod 755 /etc/my_init.d/00-slapd-setup /usr/local/sbin/slapd-run
 
 COPY slapd.conf /etc/supervisor/conf.d
 
-VOLUME [ "/etc/ldap/slapd.d", "/var/lib/ldap" ]
+VOLUME [ "/etc/ldap/slapd.d", "/etc/ssl/slapd", "/var/lib/ldap" ]
 
 EXPOSE 389 636
