@@ -3,25 +3,34 @@
 : ${slapd_basedn:=dc=ldap,dc=dit}
 : ${slapd_admin_password:=$(pwgen -s1 32)}
 
-: ${slapd_enable_ssl:=yes}
 : ${slapd_require_ssl:=yes}
-: ${slapd_ssl_ca_cert_file:=/etc/ssl/certs/ca-certificates.crt}
-: ${slapd_ssl_cert_file:=/usr/local/share/ca-certificates/slapd.crt}
-: ${slapd_ssl_key_file:=/etc/ssl/private/slapd.key}
+: ${slapd_ssl_ca_cert_file:=/etc/ssl/container/slapd-ca.crt}
+: ${slapd_ssl_cert_file:=/etc/ssl/container/slapd.crt}
+: ${slapd_ssl_key_file:=/etc/ssl/container/slapd.key}
 
 : ${slapd_disable_anon:=yes}
 
-umask 0022
-
 [ -f "/etc/ldap/slapd.d/cn=config.ldif" ] && exit 0
 
-if [ "$slapd_enable_ssl" = "yes" ] && ! [ -f "$slapd_ssl_cert_file" ]; then
+# set secure umask
+umask 0227
+
+if ! [ -f "$slapd_ssl_cert_file" ]; then
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
         -subj "/CN=$(hostname)" \
         -out $slapd_ssl_cert_file -keyout $slapd_ssl_key_file
+    chmod 0444 $slapd_ssl_cert_file
+    chgrp ssl-cert $slapd_ssl_key_file
 fi
 
-update-ca-certificates
+if ! [ -f "$slapd_ssl_ca_cert_file" ]; then
+    ln -s $slapd_ssl_cert_file $slapd_ssl_ca_cert_file
+fi
+
+echo -n "$slapd_admin_password" > /etc/ldap/ldap.passwd
+
+# set normal umask
+umask 0022
 
 cat > /etc/ldap/ldap.conf <<EOF
 URI ldapi:///
@@ -29,9 +38,6 @@ BASE $slapd_basedn
 TLS_CACERT $slapd_ssl_ca_cert_file
 SASL_MECH EXTERNAL
 EOF
-
-echo -n "$slapd_admin_password" > /etc/ldap/ldap.passwd
-chmod 0600 /etc/ldap/ldap.passwd
 
 cat /usr/share/slapd/slapd.init.ldif | \
     sed "s|@BACKEND@|mdb|g" | \
@@ -46,7 +52,7 @@ chown -R openldap:openldap /etc/ldap/slapd.d
 /usr/sbin/slapd -h ldapi:/// -g openldap -u openldap -F /etc/ldap/slapd.d
 while ! ldapsearch -b cn=config >/dev/null 2>&1; do sleep 1; done
 
-[ "$slapd_enable_ssl" = yes ] && ldapmodify <<EOF
+ldapmodify <<EOF
 dn: cn=config
 changetype: modify
 replace: olcTLSCipherSuite
