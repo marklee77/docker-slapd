@@ -3,11 +3,10 @@
 : ${slapd_basedn:=dc=ldap,dc=dit}
 : ${slapd_admin_password:=$(pwgen -s1 32)}
 
-: ${slapd_enable_ssl:=yes}
 : ${slapd_require_ssl:=yes}
-: ${slapd_ssl_ca_cert_file:=/etc/ssl/slapd/slapd-ca.crt}
-: ${slapd_ssl_cert_file:=/etc/ssl/slapd/slapd.crt}
-: ${slapd_ssl_key_file:=/etc/ssl/slapd/slapd.key}
+: ${slapd_ssl_ca_cert_file:=/etc/ssl/container/slapd-ca.crt}
+: ${slapd_ssl_cert_file:=/etc/ssl/container/slapd.crt}
+: ${slapd_ssl_key_file:=/etc/ssl/container/slapd.key}
 
 : ${slapd_disable_anon:=yes}
 
@@ -53,7 +52,7 @@ chown -R openldap:openldap /etc/ldap/slapd.d
 /usr/sbin/slapd -h ldapi:/// -g openldap -u openldap -F /etc/ldap/slapd.d
 while ! ldapsearch -b cn=config >/dev/null 2>&1; do sleep 1; done
 
-[ "$slapd_enable_ssl" = yes ] && ldapmodify <<EOF
+ldapmodify <<EOF
 dn: cn=config
 changetype: modify
 replace: olcTLSCipherSuite
