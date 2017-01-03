@@ -16,7 +16,7 @@ RUN mkdir -p /etc/ssl/container
 RUN usermod -a -G ssl-cert openldap
 RUN rm -rf /etc/ldap/slapd.d/* /var/lib/ldap/*
 RUN rm -f /etc/ldap/ldap.conf
-RUN mkdir -p /etc/ldap/dbinit.d /etc/ssl/slapd
+RUN mkdir -p /etc/ldap/dbinit.d
 
 COPY slapd-setup.sh /etc/my_init.d/10-slapd-setup
 COPY slapd-run.sh /usr/local/sbin/slapd-run
