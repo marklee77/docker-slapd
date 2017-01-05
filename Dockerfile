@@ -18,11 +18,12 @@ RUN rm -rf /etc/ldap/slapd.d/* /var/lib/ldap/*
 RUN rm -f /etc/ldap/ldap.conf
 RUN mkdir -p /etc/ldap/dbinit.d
 
-COPY slapd-setup.sh /etc/my_init.d/10-slapd-setup
-COPY slapd-run.sh /usr/local/sbin/slapd-run
+COPY root/etc/my_init.d/10-slapd-setup /etc/my_init.d/
+COPY root/usr/local/sbin/slapd-run /usr/local/sbin/
 RUN chmod 755 /etc/my_init.d/10-slapd-setup /usr/local/sbin/slapd-run
 
-COPY slapd.conf /etc/supervisor/conf.d
+COPY root/etc/supervisor/conf.d/slapd.conf /etc/supervisor/conf.d/
+RUN chmod 644 /etc/supervisor/conf.d/slapd.conf
 
 VOLUME [ "/etc/ldap/slapd.d", "/etc/ssl/container", "/var/lib/ldap" ]
 
