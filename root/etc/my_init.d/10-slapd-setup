@@ -4,9 +4,9 @@
 : ${slapd_admin_password:=$(pwgen -s1 32)}
 
 : ${slapd_require_ssl:=yes}
-: ${slapd_ssl_ca_cert_file:=/etc/ssl/container/slapd-ca.crt}
-: ${slapd_ssl_cert_file:=/etc/ssl/container/slapd.crt}
-: ${slapd_ssl_key_file:=/etc/ssl/container/slapd.key}
+: ${slapd_ssl_ca_cert_file:=/etc/ssl/slapd/slapd-ca.crt}
+: ${slapd_ssl_cert_file:=/etc/ssl/slapd/slapd.crt}
+: ${slapd_ssl_key_file:=/etc/ssl/slapd/slapd.key}
 
 : ${slapd_disable_anon:=yes}
 
