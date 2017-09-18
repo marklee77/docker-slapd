@@ -11,7 +11,7 @@ RUN apt-get update && \
         ssl-cert && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
-RUN mkdir -p /etc/ssl/container
+RUN mkdir -p /etc/ssl/slapd
 
 RUN usermod -a -G ssl-cert openldap
 RUN rm -rf /etc/ldap/slapd.d/* /var/lib/ldap/*
@@ -25,6 +25,6 @@ RUN chmod 755 /etc/my_init.d/10-slapd-setup /usr/local/sbin/slapd-run
 COPY root/etc/supervisor/conf.d/slapd.conf /etc/supervisor/conf.d/
 RUN chmod 644 /etc/supervisor/conf.d/slapd.conf
 
-VOLUME [ "/etc/ldap/slapd.d", "/etc/ssl/container", "/var/lib/ldap" ]
+VOLUME [ "/etc/ldap/slapd.d", "/etc/ssl/slapd", "/var/lib/ldap" ]
 
 EXPOSE 389 636
