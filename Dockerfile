@@ -7,24 +7,28 @@ RUN apt-get update && \
         ca-certificates \
         ldap-utils \
         pwgen \
-        slapd \
-        ssl-cert && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/*
-
-RUN mkdir -p /etc/ssl/slapd
-
-RUN usermod -a -G ssl-cert openldap
-RUN rm -rf /etc/ldap/slapd.d/* /var/lib/ldap/*
-RUN rm -f /etc/ldap/ldap.conf
-RUN mkdir -p /etc/ldap/dbinit.d
+        slapd && \
+    rm -rf \
+        /etc/ldap/ldap.conf \
+        /etc/ldap/slapd.d \
+        /var/cache/apt/* \
+        /var/lib/apt/lists/* \
+        /var/lib/ldap
 
 COPY root/etc/my_init.d/10-slapd-setup /etc/my_init.d/
 COPY root/usr/local/sbin/slapd-run /usr/local/sbin/
 RUN chmod 755 /etc/my_init.d/10-slapd-setup /usr/local/sbin/slapd-run
+RUN mkdir -m 0755 -p /etc/ldap/dbinit.d
 
 COPY root/etc/supervisor/conf.d/slapd.conf /etc/supervisor/conf.d/
 RUN chmod 644 /etc/supervisor/conf.d/slapd.conf
 
-VOLUME [ "/etc/ldap/slapd.d", "/etc/ssl/slapd", "/var/lib/ldap" ]
+RUN mkdir -m 0755 -p /container/slapd && \
+    ln -s /container/slapd/ldap.conf /etc/ldap/ldap.conf && \
+    ln -s /container/slapd/ldap.passwd /etc/ldap/ldap.passwd && \
+    ln -s /container/slapd/slapd.d /etc/ldap/slapd.d && \
+    ln -s /container/slapd/ldap /var/lib/ldap
+
+VOLUME [ "/container/slapd" ]
 
 EXPOSE 389 636

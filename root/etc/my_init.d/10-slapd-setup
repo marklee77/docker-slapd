@@ -4,11 +4,14 @@
 : ${slapd_admin_password:=$(pwgen -s1 32)}
 
 : ${slapd_require_ssl:=yes}
-: ${slapd_ssl_ca_cert_file:=/etc/ssl/slapd/slapd-ca.crt}
-: ${slapd_ssl_cert_file:=/etc/ssl/slapd/slapd.crt}
-: ${slapd_ssl_key_file:=/etc/ssl/slapd/slapd.key}
+: ${slapd_ssl_ca_cert_file:=/container/slapd/ssl/ca.crt}
+: ${slapd_ssl_cert_file:=/container/slapd/ssl/ldap.crt}
+: ${slapd_ssl_key_file:=/container/slapd/ssl/ldap.key}
 
 : ${slapd_disable_anon:=yes}
+
+mkdir -p -m 0700 /container/slapd/slapd.d /container/slapd/ldap
+chown -R openldap:openldap /container/slapd
 
 [ -f "/etc/ldap/slapd.d/cn=config.ldif" ] && exit 0
 
@@ -16,11 +19,14 @@
 umask 0227
 
 if ! [ -f "$slapd_ssl_cert_file" ]; then
+    slapd_ssl_cert_dir="$(dirname "$slapd_ssl_cert_file")"
+    slapd_ssl_key_dir="$(dirname "$slapd_ssl_key_file")"
+    mkdir -p -m 0755 "$slapd_ssl_cert_dir" "$slapd_ssl_key_dir"
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
         -subj "/CN=$(hostname)" \
         -out $slapd_ssl_cert_file -keyout $slapd_ssl_key_file
     chmod 0444 $slapd_ssl_cert_file
-    chgrp ssl-cert $slapd_ssl_key_file
+    chown openldap:openldap "$slapd_ssl_cert_file" "$slapd_ssl_key_file"
 fi
 
 if ! [ -f "$slapd_ssl_ca_cert_file" ]; then
@@ -46,7 +52,7 @@ cat /usr/share/slapd/slapd.init.ldif | \
     sed "s|@SUFFIX@|$slapd_basedn|g" | \
     sed "s|@PASSWORD@|$(slappasswd -T /etc/ldap/ldap.passwd)|g" | \
     slapadd -b cn=config -F /etc/ldap/slapd.d
-chown -R openldap:openldap /etc/ldap/slapd.d
+chown -LR openldap:openldap /etc/ldap/slapd.d
 
 # start slapd on local socket and wait for it to come up
 /usr/sbin/slapd -h ldapi:/// -g openldap -u openldap -F /etc/ldap/slapd.d
