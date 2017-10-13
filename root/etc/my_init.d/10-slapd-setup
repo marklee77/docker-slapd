@@ -17,9 +17,6 @@ if [ -z "$slapd_admin_password" ]; then
     fi
 fi
 
-mkdir -p -m 0755 /etc/ssl/slapd
-chown -R openldap:openldap /etc/ssl/slapd
-
 [ -f "/etc/ldap/slapd.d/cn=config.ldif" ] && exit 0
 
 # set secure umask

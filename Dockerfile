@@ -15,6 +15,8 @@ RUN apt-get update && \
         /var/lib/apt/lists/* \
         /var/lib/ldap/*
 
+RUN mkdir -m 0755 -p /etc/ssl/slapd
+
 COPY root/etc/my_init.d/10-slapd-setup /etc/my_init.d/
 COPY root/usr/local/sbin/slapd-run /usr/local/sbin/
 RUN chmod 755 /etc/my_init.d/10-slapd-setup /usr/local/sbin/slapd-run
