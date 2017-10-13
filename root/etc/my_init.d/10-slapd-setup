@@ -10,11 +10,11 @@
 : ${slapd_disable_anon:=yes}
 
 if [ -z "$slapd_admin_password" ]; then
-  if [ -f /run/secrets/slapd_admin_password ]; then
-    slapd_admin_password="$(head -1 /run/secrets/slapd_admin_password)"
-  else
-    slapd_admin_password="$(pwgen -s1 32)"
-  fi
+    if [ -f /run/secrets/slapd_admin_password ]; then
+        slapd_admin_password="$(head -1 /run/secrets/slapd_admin_password)"
+    else
+        slapd_admin_password="$(pwgen -s1 32)"
+    fi
 fi
 
 mkdir -p -m 0755 /etc/ssl/slapd
