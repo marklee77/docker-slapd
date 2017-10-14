@@ -67,8 +67,8 @@ EOF
 data_dir=/var/lib/ldap
 [ -L "$data_dir" ] && data_dir="$(readlink "$data_dir")"
 if ! [ -d "$data_dir" ]; then
-    mkdir -m 0755 -p "$data_dir"
-    chown -LR openldap:openldap /var/lib/ldap
+    mkdir -m 0750 -p "$data_dir"
+    chown openldap:openldap "$data_dir"
 fi
 
 config_dir=/etc/ldap/slapd.d
