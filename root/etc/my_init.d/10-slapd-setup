@@ -17,15 +17,18 @@ if [ -z "$slapd_admin_password" ]; then
     fi
 fi
 
-[ -f "/etc/ldap/slapd.d/cn=config.ldif" ] && exit 0
-
 # set secure umask
-umask 0227
+umask 0277
+
+for var in slapd_ssl_ca_cert_file slapd_ssl_cert_file slapd_ssl_key_file; do
+    file="$(eval "echo \"\$$var\"")"
+    [ -L "$file" ] && file="$(readlink "$file")"
+    dir="$(dirname "$file")"
+    mkdir -m 0755 -p "$dir"
+    eval "$var=\"$file\""
+done
 
 if ! [ -f "$slapd_ssl_cert_file" ]; then
-    slapd_ssl_cert_dir="$(dirname "$slapd_ssl_cert_file")"
-    slapd_ssl_key_dir="$(dirname "$slapd_ssl_key_file")"
-    mkdir -p -m 0755 "$slapd_ssl_cert_dir" "$slapd_ssl_key_dir"
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
         -subj "/CN=$(hostname)" \
         -out "$slapd_ssl_cert_file" -keyout "$slapd_ssl_key_file"
@@ -37,17 +40,42 @@ if ! [ -f "$slapd_ssl_ca_cert_file" ]; then
     ln -s "$slapd_ssl_cert_file" "$slapd_ssl_ca_cert_file"
 fi
 
-echo -n "$slapd_admin_password" > /etc/ldap/ldap.passwd
+config_file=/etc/ldap/ldap.passwd
+[ -L "$config_file" ] && config_file="$(readlink "$config_file")"
+config_dir="$(dirname "$config_file")"
+[ -d "$config_dir" ] || mkdir -m 0755 -p "$config_dir"
+if [ -f "$config_file" ]; then
+    export slapd_admin_password="$(cat "$config_file")"
+else
+    echo -n "$slapd_admin_password" > "$config_file"
+fi
 
 # set normal umask
 umask 0022
 
-cat > /etc/ldap/ldap.conf <<EOF
+config_file=/etc/ldap/ldap.conf
+[ -L "$config_file" ] && config_file="$(readlink "$config_file")"
+config_dir="$(dirname "$config_file")"
+[ -d "$config_dir" ] || mkdir -m 0755 -p "$config_dir"
+[ -f "$config_file" ] || cat > "$config_file" <<EOF
 URI ldapi:///
 BASE $slapd_basedn
 TLS_CACERT $slapd_ssl_ca_cert_file
 SASL_MECH EXTERNAL
 EOF
+
+data_dir=/var/lib/ldap
+[ -L "$data_dir" ] && data_dir="$(readlink "$data_dir")"
+if ! [ -d "$data_dir" ]; then
+    mkdir -m 0755 -p "$data_dir"
+    chown -LR openldap:openldap /var/lib/ldap
+fi
+
+config_dir=/etc/ldap/slapd.d
+[ -L "$config_dir" ] && config_dir="$(readlink "$config_dir")"
+[ -d "$config_dir" ] || mkdir -m 0755 -p "$config_dir"
+
+[ -f "$config_dir/cn=config.ldif" ] && exit 0
 
 cat /usr/share/slapd/slapd.init.ldif | \
     sed "s|@BACKEND@|mdb|g" | \
