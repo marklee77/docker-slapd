@@ -1,6 +1,7 @@
 #!/bin/bash
 
 : ${slapd_basedn:=dc=ldap,dc=dit}
+: ${slapd_admin_password:="$(pwgen -s1 32)"}
 
 : ${slapd_require_ssl:=yes}
 : ${slapd_ssl_ca_cert_file:=/etc/ssl/slapd/ca.crt}
@@ -8,14 +9,6 @@
 : ${slapd_ssl_key_file:=/etc/ssl/slapd/ldap.key}
 
 : ${slapd_disable_anon:=yes}
-
-if [ -z "$slapd_admin_password" ]; then
-    if [ -f /run/secrets/slapd_admin_password ]; then
-        slapd_admin_password="$(head -1 /run/secrets/slapd_admin_password)"
-    else
-        slapd_admin_password="$(pwgen -s1 32)"
-    fi
-fi
 
 # set secure umask
 umask 0277
@@ -45,7 +38,7 @@ config_file=/etc/ldap/ldap.passwd
 config_dir="$(dirname "$config_file")"
 [ -d "$config_dir" ] || mkdir -m 0755 -p "$config_dir"
 if [ -f "$config_file" ]; then
-    export slapd_admin_password="$(cat "$config_file")"
+    slapd_admin_password="$(cat "$config_file")"
 else
     echo -n "$slapd_admin_password" > "$config_file"
 fi
