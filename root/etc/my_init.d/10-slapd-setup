@@ -10,8 +10,8 @@
 
 : ${slapd_disable_anon:=yes}
 
-# set secure umask
-umask 0277
+# set normal umask
+umask 0022
 
 for var in slapd_ssl_ca_cert_file slapd_ssl_cert_file slapd_ssl_key_file; do
     file="$(eval "echo \"\$$var\"")"
@@ -20,6 +20,9 @@ for var in slapd_ssl_ca_cert_file slapd_ssl_cert_file slapd_ssl_key_file; do
     mkdir -m 0755 -p "$dir"
     eval "$var=\"$file\""
 done
+
+# set secure umask
+umask 0277
 
 if ! [ -f "$slapd_ssl_cert_file" ]; then
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
