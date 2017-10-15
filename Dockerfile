@@ -29,7 +29,7 @@ RUN ln -s /data/slapd/ldap.conf /etc/ldap/ldap.conf && \
 
 COPY root/etc/my_init.d/10-slapd-setup /etc/my_init.d/
 COPY root/usr/local/sbin/slapd-run /usr/local/sbin/
-RUN chmod 755 /etc/my_init.d/10-slapd-setup /usr/local/sbin/slapd-run
+RUN chmod 0755 /etc/my_init.d/10-slapd-setup /usr/local/sbin/slapd-run
 RUN mkdir -m 0755 -p /etc/ldap/dbinit.d
 
 COPY root/etc/supervisor/conf.d/slapd.conf /etc/supervisor/conf.d/
