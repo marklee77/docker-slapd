@@ -26,7 +26,7 @@ if ! [ -f "$slapd_ssl_cert_file" ]; then
         -subj "/CN=$(hostname)" \
         -out "$slapd_ssl_cert_file" -keyout "$slapd_ssl_key_file"
     chmod 0444 "$slapd_ssl_cert_file"
-    chown openldap:openldap "$slapd_ssl_cert_file" "$slapd_ssl_key_file"
+    chown openldap:openldap "$slapd_ssl_key_file"
 fi
 
 if ! [ -f "$slapd_ssl_ca_cert_file" ]; then

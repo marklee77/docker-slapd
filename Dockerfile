@@ -2,7 +2,9 @@ FROM marklee77/supervisor:jessie
 MAINTAINER Mark Stillwell <mark@stillwell.me>
 
 ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update && \
+RUN groupadd -g 200 openldap && \
+    useradd -u 200 -g 200 -r openldap && \
+    apt-get update && \
     apt-get -y install --no-install-recommends \
         ca-certificates \
         ldap-utils \
