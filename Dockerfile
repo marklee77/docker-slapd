@@ -1,9 +1,10 @@
 FROM marklee77/supervisor:jessie
-MAINTAINER Mark Stillwell <mark@stillwell.me>
+LABEL maintainer="Mark Stillwell <mark@stillwell.me>"
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN groupadd -g 200 openldap && \
     useradd -u 200 -g 200 -r openldap && \
+    mkdir -p /tmp/run && \
     apt-get update && \
     apt-get -y install --no-install-recommends \
         ca-certificates \

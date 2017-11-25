@@ -21,6 +21,10 @@ for var in slapd_ssl_ca_cert_file slapd_ssl_cert_file slapd_ssl_key_file; do
     eval "$var=\"$file\""
 done
 
+# make sure runtime directory exists
+mkdir -m 0755 -p /var/run/slapd
+chown openldap:openldap /var/run/slapd
+
 # set secure umask
 umask 0277
 
