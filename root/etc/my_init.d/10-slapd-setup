@@ -22,8 +22,10 @@ for var in slapd_ssl_ca_cert_file slapd_ssl_cert_file slapd_ssl_key_file; do
 done
 
 # make sure runtime directory exists
-mkdir -m 0755 -p /var/run/slapd
-chown openldap:openldap /var/run/slapd
+dir=/var/run/slapd
+[ -L "$dir" ] && dir="$(readlink "$dir")"
+mkdir -m 0755 -p "$dir"
+chown openldap:openldap "$dir"
 
 # set secure umask
 umask 0277
@@ -40,42 +42,42 @@ if ! [ -f "$slapd_ssl_ca_cert_file" ]; then
     ln -s "$slapd_ssl_cert_file" "$slapd_ssl_ca_cert_file"
 fi
 
-config_file=/etc/ldap/ldap.passwd
-[ -L "$config_file" ] && config_file="$(readlink "$config_file")"
-config_dir="$(dirname "$config_file")"
-[ -d "$config_dir" ] || mkdir -m 0755 -p "$config_dir"
-if [ -f "$config_file" ]; then
-    slapd_admin_password="$(cat "$config_file")"
+file=/etc/ldap/ldap.passwd
+[ -L "$file" ] && file="$(readlink "$file")"
+dir="$(dirname "$file")"
+[ -d "$dir" ] || mkdir -m 0755 -p "$dir"
+if [ -f "$file" ]; then
+    slapd_admin_password="$(cat "$file")"
 else
-    echo -n "$slapd_admin_password" > "$config_file"
+    echo -n "$slapd_admin_password" > "$file"
 fi
 
 # set normal umask
 umask 0022
 
-config_file=/etc/ldap/ldap.conf
-[ -L "$config_file" ] && config_file="$(readlink "$config_file")"
-config_dir="$(dirname "$config_file")"
-[ -d "$config_dir" ] || mkdir -m 0755 -p "$config_dir"
-[ -f "$config_file" ] || cat > "$config_file" <<EOF
+file=/etc/ldap/ldap.conf
+[ -L "$file" ] && file="$(readlink "$file")"
+dir="$(dirname "$file")"
+[ -d "$dir" ] || mkdir -m 0755 -p "$dir"
+[ -f "$file" ] || cat > "$file" <<EOF
 URI ldapi:///
 BASE $slapd_basedn
 TLS_CACERT $slapd_ssl_ca_cert_file
 SASL_MECH EXTERNAL
 EOF
 
-data_dir=/var/lib/ldap
-[ -L "$data_dir" ] && data_dir="$(readlink "$data_dir")"
-if ! [ -d "$data_dir" ]; then
-    mkdir -m 0750 -p "$data_dir"
-    chown openldap:openldap "$data_dir"
+dir=/var/lib/ldap
+[ -L "$dir" ] && dir="$(readlink "$dir")"
+if ! [ -d "$dir" ]; then
+    mkdir -m 0750 -p "$dir"
+    chown openldap:openldap "$dir"
 fi
 
-config_dir=/etc/ldap/slapd.d
-[ -L "$config_dir" ] && config_dir="$(readlink "$config_dir")"
-[ -d "$config_dir" ] || mkdir -m 0755 -p "$config_dir"
+dir=/etc/ldap/slapd.d
+[ -L "$dir" ] && dir="$(readlink "$dir")"
+[ -d "$dir" ] || mkdir -m 0755 -p "$dir"
 
-[ -f "$config_dir/cn=config.ldif" ] && exit 0
+[ -f "$dir/cn=config.ldif" ] && exit 0
 
 cat /usr/share/slapd/slapd.init.ldif | \
     sed "s|@BACKEND@|mdb|g" | \
@@ -83,8 +85,8 @@ cat /usr/share/slapd/slapd.init.ldif | \
     sed "s|@BACKENDOPTIONS@|olcDbMaxSize: 1073741824|g" | \
     sed "s|@SUFFIX@|$slapd_basedn|g" | \
     sed "s|@PASSWORD@|$(slappasswd -T /etc/ldap/ldap.passwd)|g" | \
-    slapadd -b cn=config -F /etc/ldap/slapd.d
-chown -LR openldap:openldap /etc/ldap/slapd.d
+    slapadd -b cn=config -F "$dir"
+chown -LR openldap:openldap "$dir"
 
 # start slapd on local socket and wait for it to come up
 /usr/sbin/slapd -h ldapi:/// -g openldap -u openldap -F /etc/ldap/slapd.d
