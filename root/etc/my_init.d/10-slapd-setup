@@ -10,8 +10,8 @@
 
 : ${slapd_disable_anon:=yes}
 
-# set secure umask
-umask 0277
+# set normal umask
+umask 0022
 
 for var in slapd_ssl_ca_cert_file slapd_ssl_cert_file slapd_ssl_key_file; do
     file="$(eval "echo \"\$$var\"")"
@@ -24,6 +24,9 @@ done
 # make sure runtime directory exists
 mkdir -m 0755 -p /var/run/slapd
 chown openldap:openldap /var/run/slapd
+
+# set secure umask
+umask 0277
 
 if ! [ -f "$slapd_ssl_cert_file" ]; then
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
