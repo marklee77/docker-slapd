@@ -20,8 +20,8 @@ RUN groupadd -g 200 openldap && \
 
 RUN mkdir -m 0755 -p /etc/ssl/slapd && \
     ln -s /data/slapd/ssl/ca.crt /etc/ssl/slapd/ca.crt && \
-    ln -s /data/slapd/ssl/ldap.crt /etc/ssl/slapd/ldap.crt && \
-    ln -s /data/slapd/ssl/ldap.key /etc/ssl/slapd/ldap.key
+    ln -s /data/slapd/ssl/server.crt /etc/ssl/slapd/server.crt && \
+    ln -s /data/slapd/ssl/server.key /etc/ssl/slapd/server.key
 
 RUN ln -s /data/slapd/ldap.conf /etc/ldap/ldap.conf && \
     ln -s /data/slapd/ldap.passwd /etc/ldap/ldap.passwd && \
