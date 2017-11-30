@@ -21,10 +21,25 @@ for var in slapd_ssl_ca_cert_file slapd_ssl_cert_file slapd_ssl_key_file; do
     eval "$var=\"$file\""
 done
 
-# make sure runtime directory exists
+file=/etc/ldap/ldap.conf
+[ -L "$file" ] && file="$(readlink "$file")"
+dir="$(dirname "$file")"
+[ -d "$dir" ] || mkdir -m 0755 -p "$dir"
+[ -f "$file" ] || cat > "$file" <<EOF
+URI ldapi:///
+BASE $slapd_basedn
+TLS_CACERT $slapd_ssl_ca_cert_file
+SASL_MECH EXTERNAL
+EOF
+
 dir=/var/run/slapd
 [ -L "$dir" ] && dir="$(readlink "$dir")"
 mkdir -m 0755 -p "$dir"
+chown openldap:openldap "$dir"
+
+dir=/var/lib/ldap
+[ -L "$dir" ] && dir="$(readlink "$dir")"
+mkdir -m 0750 -p "$dir"
 chown openldap:openldap "$dir"
 
 # set secure umask
@@ -54,24 +69,6 @@ fi
 
 # set normal umask
 umask 0022
-
-file=/etc/ldap/ldap.conf
-[ -L "$file" ] && file="$(readlink "$file")"
-dir="$(dirname "$file")"
-[ -d "$dir" ] || mkdir -m 0755 -p "$dir"
-[ -f "$file" ] || cat > "$file" <<EOF
-URI ldapi:///
-BASE $slapd_basedn
-TLS_CACERT $slapd_ssl_ca_cert_file
-SASL_MECH EXTERNAL
-EOF
-
-dir=/var/lib/ldap
-[ -L "$dir" ] && dir="$(readlink "$dir")"
-if ! [ -d "$dir" ]; then
-    mkdir -m 0750 -p "$dir"
-    chown openldap:openldap "$dir"
-fi
 
 dir=/etc/ldap/slapd.d
 [ -L "$dir" ] && dir="$(readlink "$dir")"
