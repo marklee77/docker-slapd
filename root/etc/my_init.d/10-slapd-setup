@@ -30,7 +30,7 @@ mkdir -m 0750 -p "$dir"
 chown openldap:openldap "$dir"
 
 # set secure umask
-umask 077
+umask 027
 
 for var in slapd_ssl_ca_cert_file slapd_ssl_cert_file slapd_ssl_key_file; do
     eval "$var=\"\$(mypath \$$var)\""
