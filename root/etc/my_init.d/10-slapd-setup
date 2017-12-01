@@ -12,7 +12,7 @@
 : ${slapd_disable_anon:=yes}
 
 # set normal umask
-umask 0022
+umask 022
 
 cat > "$(mypath /etc/ldap/ldap.conf)" <<EOF
 URI ldapi:///
@@ -30,7 +30,7 @@ mkdir -m 0750 -p "$dir"
 chown openldap:openldap "$dir"
 
 # set secure umask
-umask 0077
+umask 077
 
 for var in slapd_ssl_ca_cert_file slapd_ssl_cert_file slapd_ssl_key_file; do
     eval "$var=\"\$(mypath \$$var)\""
