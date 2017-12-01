@@ -1,4 +1,5 @@
 #!/bin/bash
+. /usr/local/share/my_init/functions.sh
 
 : ${slapd_basedn:=dc=ldap,dc=dit}
 : ${slapd_admin_password:="$(pwgen -s1 32)"}
@@ -13,19 +14,7 @@
 # set normal umask
 umask 0022
 
-for var in slapd_ssl_ca_cert_file slapd_ssl_cert_file slapd_ssl_key_file; do
-    file="$(eval "echo \"\$$var\"")"
-    [ -L "$file" ] && file="$(readlink "$file")"
-    dir="$(dirname "$file")"
-    mkdir -m 0755 -p "$dir"
-    eval "$var=\"$file\""
-done
-
-file=/etc/ldap/ldap.conf
-[ -L "$file" ] && file="$(readlink "$file")"
-dir="$(dirname "$file")"
-[ -d "$dir" ] || mkdir -m 0755 -p "$dir"
-[ -f "$file" ] || cat > "$file" <<EOF
+cat > "$(mypath /etc/ldap/ldap.conf)" <<EOF
 URI ldapi:///
 BASE $slapd_basedn
 TLS_CACERT $slapd_ssl_ca_cert_file
@@ -33,23 +22,24 @@ SASL_MECH EXTERNAL
 EOF
 
 dir=/var/run/slapd
-[ -L "$dir" ] && dir="$(readlink "$dir")"
 mkdir -m 0755 -p "$dir"
 chown openldap:openldap "$dir"
 
-dir=/var/lib/ldap
-[ -L "$dir" ] && dir="$(readlink "$dir")"
+dir="$(mypath /var/lib/ldap)"
 mkdir -m 0750 -p "$dir"
 chown openldap:openldap "$dir"
 
 # set secure umask
-umask 0277
+umask 0077
 
+for var in slapd_ssl_ca_cert_file slapd_ssl_cert_file slapd_ssl_key_file; do
+    eval "$var=\"\$(mypath \$$var)\""
+done
 if ! [ -f "$slapd_ssl_cert_file" ]; then
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
         -subj "/CN=$(hostname)" \
         -out "$slapd_ssl_cert_file" -keyout "$slapd_ssl_key_file"
-    chmod 0444 "$slapd_ssl_cert_file"
+    chmod 0644 "$slapd_ssl_cert_file"
     chown openldap:openldap "$slapd_ssl_key_file"
 fi
 
@@ -57,23 +47,15 @@ if ! [ -f "$slapd_ssl_ca_cert_file" ]; then
     ln -s "$slapd_ssl_cert_file" "$slapd_ssl_ca_cert_file"
 fi
 
-file=/etc/ldap/ldap.passwd
-[ -L "$file" ] && file="$(readlink "$file")"
-dir="$(dirname "$file")"
-[ -d "$dir" ] || mkdir -m 0755 -p "$dir"
+file="$(mypath /etc/ldap/ldap.passwd)"
 if [ -f "$file" ]; then
     slapd_admin_password="$(cat "$file")"
 else
     echo -n "$slapd_admin_password" > "$file"
 fi
 
-# set normal umask
-umask 0022
-
-dir=/etc/ldap/slapd.d
-[ -L "$dir" ] && dir="$(readlink "$dir")"
-[ -d "$dir" ] || mkdir -m 0755 -p "$dir"
-
+dir="$(mypath /etc/ldap/slapd.d)"
+mkdir -m 0755 -p "$dir"
 [ -f "$dir/cn=config.ldif" ] && exit 0
 
 cat /usr/share/slapd/slapd.init.ldif | \
