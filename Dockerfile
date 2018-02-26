@@ -3,7 +3,6 @@ LABEL maintainer="Mark Stillwell <mark@stillwell.me>"
 
 RUN groupadd -g 200 openldap && \
     useradd -u 200 -g 200 -r openldap && \
-    mkdir -p /tmp/run && \
     apt-get update && \
     apt-get -y install --no-install-recommends \
         ca-certificates \
@@ -12,20 +11,12 @@ RUN groupadd -g 200 openldap && \
         slapd && \
     rm -rf \
         /etc/ldap/ldap.conf \
-        /etc/ldap/slapd.d \
+        /etc/ldap/slapd.d/* \
         /var/cache/apt/* \
         /var/lib/apt/lists/* \
-        /var/lib/ldap
+        /var/lib/ldap/*
 
-RUN mkdir -m 0755 -p /etc/ssl/slapd && \
-    mkdir -m 0755 -p /etc/ldap/dbinit.d && \
-    ln -s /data/slapd/ssl/ca.crt /etc/ssl/slapd/ca.crt && \
-    ln -s /data/slapd/ssl/server.crt /etc/ssl/slapd/server.crt && \
-    ln -s /data/slapd/ssl/server.key /etc/ssl/slapd/server.key && \
-    ln -s /data/slapd/config/ldap/ldap.conf /etc/ldap/ldap.conf && \
-    ln -s /data/slapd/config/ldap/ldap.passwd /etc/ldap/ldap.passwd && \
-    ln -s /data/slapd/config/slapd /etc/ldap/slapd.d && \
-    ln -s /data/slapd/db /var/lib/ldap
+RUN mkdir -m 0755 -p /etc/ssl/slapd /etc/ldap/dbinit.d
 
 COPY root/etc/my_init.d/10-slapd-setup /etc/my_init.d/
 COPY root/usr/local/sbin/slapd-run /usr/local/sbin/
@@ -35,3 +26,4 @@ COPY root/etc/supervisor/conf.d/slapd.conf /etc/supervisor/conf.d/
 RUN chmod 0644 /etc/supervisor/conf.d/slapd.conf
 
 EXPOSE 389 636
+VOLUME ["/etc/ldap/slapd.d", "/var/lib/ldap"]

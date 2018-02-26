@@ -14,7 +14,7 @@
 # set normal umask
 umask 022
 
-cat > "$(mypath /etc/ldap/ldap.conf)" <<EOF
+cat >/etc/ldap/ldap.conf <<EOF
 URI ldapi:///
 BASE $slapd_basedn
 TLS_CACERT $slapd_ssl_ca_cert_file
@@ -25,16 +25,9 @@ dir=/var/run/slapd
 mkdir -m 0755 -p "$dir"
 chown openldap:openldap "$dir"
 
-dir="$(mypath /var/lib/ldap)"
-mkdir -m 0750 -p "$dir"
-chown openldap:openldap "$dir"
-
 # set secure umask
 umask 027
 
-for var in slapd_ssl_ca_cert_file slapd_ssl_cert_file slapd_ssl_key_file; do
-    eval "$var=\"\$(mypath \$$var)\""
-done
 if ! [ -f "$slapd_ssl_cert_file" ]; then
     openssl req -newkey rsa:2048 -x509 -nodes -days 365 \
         -subj "/CN=$(hostname)" \
@@ -47,14 +40,14 @@ if ! [ -f "$slapd_ssl_ca_cert_file" ]; then
     ln -s "$slapd_ssl_cert_file" "$slapd_ssl_ca_cert_file"
 fi
 
-file="$(mypath /etc/ldap/ldap.passwd)"
+file=/etc/ldap/ldap.passwd
 if [ -f "$file" ]; then
     slapd_admin_password="$(cat "$file")"
 else
-    echo -n "$slapd_admin_password" > "$file"
+    echo -n "$slapd_admin_password" >"$file"
 fi
 
-dir="$(mypath /etc/ldap/slapd.d)"
+dir=/etc/ldap/slapd.d
 mkdir -m 0755 -p "$dir"
 [ -f "$dir/cn=config.ldif" ] && exit 0
 
@@ -114,4 +107,4 @@ done
 
 # make sure that slapd is not running
 pidfile=/var/run/slapd/slapd.pid
-while [ -f $pidfile ] && kill -INT $(cat $pidfile); do sleep 1; done
+while [ -f $pidfile ] && kill -INT "$(cat $pidfile)"; do sleep 1; done
