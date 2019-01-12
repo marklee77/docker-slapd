@@ -5,6 +5,7 @@ RUN groupadd -g 200 openldap && \
     useradd -u 200 -g 200 -r openldap && \
     apt-get update && \
     apt-get -y install --no-install-recommends \
+        apt-transport-https \
         ca-certificates \
         ldap-utils \
         pwgen \
